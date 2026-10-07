@@ -438,3 +438,15 @@ FodyWeavers.xsd
 !.env.example
 **/appsettings.Local.json
 *.user
+
+# Complementos do projeto
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+.env
+.env.*
+!.env.example
+**/appsettings.Local.json
+*.user
+.vs/

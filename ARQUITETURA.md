@@ -20,8 +20,8 @@ backend/
   Data/
   Configurations/
   Migrations/
-frontend/                    # React será criado na etapa 10
-  src/                      # Estrutura futura
+frontend/
+  src/
     components/
     pages/
     services/
@@ -67,4 +67,4 @@ Relacionamentos: Fornecedor 1:N FornecedorProduto; Insumo 1:N FornecedorProduto;
 - OpenAPI oficial ASP.NET Core: https://learn.microsoft.com/aspnet/core/fundamentals/openapi/overview?view=aspnetcore-10.0
 - Índices EF Core: https://learn.microsoft.com/ef/core/modeling/indexes
 
-Esses mecanismos serão configurados nas etapas correspondentes, após restaurar as dependências.
+Esses mecanismos estão configurados. Migration gerada; sua aplicação depende de iniciar o LocalDB fora do ambiente restrito.

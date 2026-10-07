@@ -1,30 +1,74 @@
-# Gestão de perfumes — entrega da etapa 1
+# Gestão de perfumes
 
-A arquitetura, modelo de banco, relacionamentos e decisões estão em [ARQUITETURA.md](ARQUITETURA.md). Apenas a estrutura inicial foi implementada. Os cadastros, persistência, migration, histórico e frontend ainda não foram implementados.
+ASP.NET Core 10 + EF Core 10 + SQL Server, com frontend separado em React, Vite, JavaScript, Axios, React Router e Bootstrap 5.
 
-## Etapa 1 — concluída
+Implementados os arquivos reais de fornecedores, insumos, apresentações e histórico de preços. Conversões e custos pertencem ao backend. Preços anteriores são preservados; transações e índices protegem ofertas e vigências.
 
-Criados: Perfumes.slnx, backend/Perfumes.Api.csproj, backend/Program.cs, backend/appsettings.json, backend/appsettings.Development.json, backend/Properties/launchSettings.json, backend/Perfumes.Api.http, diretórios Controllers, Services, DTOs, Entities, Data, Configurations e Migrations, frontend/README.md, .gitignore, ARQUITETURA.md e este README.
+Consulte ARQUITETURA.md para o modelo e ETAPAS.md para arquivos e validação por etapa.
 
-Arquivos gerados ajustados: Program.cs recebeu ProblemDetails e /health; Perfumes.Api.csproj mantém net10.0 e nullable reference types, sem pacotes externos nesta etapa. Removidos os exemplos WeatherForecast.cs e Controllers/WeatherForecastController.cs do template. O arquivo HTTP foi adaptado para /health. Não existia aplicação anterior no diretório.
+## Executar com LocalDB
 
-Verificação: dotnet build Perfumes.slnx terminou com zero erros e zero avisos no SDK .NET 10 instalado. OpenAPI será acrescentado na etapa 9, conforme a ordem solicitada.
-
-Execute no diretório outputs:
+Requisitos: SDK .NET 10, Node 22.12+ (validado com Node 24), npm e LocalDB. Execute da raiz do projeto:
 
 ```powershell
-dotnet build Perfumes.slnx
-dotnet run --project backend/Perfumes.Api.csproj --no-launch-profile --urls http://localhost:5080
+dotnet restore
+dotnet tool restore
+dotnet build tests/Perfumes.Verificacoes/Perfumes.Verificacoes.csproj --no-restore
+dotnet run --project tests/Perfumes.Verificacoes --no-build
+SqlLocalDB start MSSQLLocalDB
+$env:ConnectionStrings__DefaultConnection = 'Server=(localdb)\MSSQLLocalDB;Database=PerfumesCodexTeste;Trusted_Connection=True;TrustServerCertificate=True'
+dotnet ef database update --project backend
+$env:ASPNETCORE_ENVIRONMENT = 'Development'
+dotnet run --project backend --no-launch-profile --urls http://localhost:5080
 ```
 
-Consulte GET http://localhost:5080/health. Testado com resposta {"status":"ok"}. Esse endpoint confirma somente que a API está executando; ainda não verifica banco. O logging usa console para não depender de permissão de escrita no Event Log do Windows.
+Autenticação integrada local, sem senha no código. Para outro banco, configure ConnectionStrings__DefaultConnection externamente. A factory de migrations usa essa variável. Migration não é aplicada automaticamente.
 
-## Etapa 2 — bloqueada antes de alterar a aplicação
+Em outro terminal:
 
-O teste de restauração de Microsoft.EntityFrameworkCore.SqlServer 10.0.11 foi feito em um projeto temporário fora da entrega. Falhou ao resolver dependências Microsoft.Extensions.Logging, Microsoft.Extensions.Caching.Memory e Microsoft.Extensions.Configuration.Abstractions, com NU1301 e falha HTTPS do Windows: SEC_E_NO_CREDENTIALS / Credenciais não disponíveis no pacote de segurança. A falha persistiu após conceder acesso à rede e também ocorreu no curl. O cache local não resolveu a restauração normal.
+```powershell
+cd frontend
+npm ci
+npm run dev
+```
 
-A aplicação entregue permanece compilável. Nenhuma etapa posterior foi iniciada. Será necessário corrigir o acesso HTTPS do NuGet no ambiente para restaurar os pacotes. Não foi desabilitada a validação de certificados.
+Abra http://localhost:5173. A API padrão é http://localhost:5080/api; VITE_API_URL permite configurar outra URL. CORS aceita http://localhost:5173; configure Cors:Origens para outras origens.
 
-Depois de corrigir esse acesso, a continuação começará por configurar EF Core/SQL Server e uma connection string via user-secrets ou variável ConnectionStrings__DefaultConnection. Será necessário indicar a instância SQL Server desejada antes de criar o banco. Não há credenciais armazenadas no projeto e nenhum banco foi criado.
+## API
 
-Etapas pendentes: 2 configuração EF/SQL Server; 3 entidades; 4 Fluent API; 5 migration/banco; 6 DTOs; 7 serviços; 8 endpoints; 9 OpenAPI; 10 React; 11 Axios/Router; 12 layout; 13 fornecedores; 14 insumos; 15 ofertas; 16 histórico; 17 validações; 18 revisão.
+Documento OpenAPI JSON: http://localhost:5080/openapi/v1.json em Development. Não há Swagger UI nesta entrega. /health verifica execução, sem testar banco. Sem conexão configurada, cadastros retornam 503 com ProblemDetails.
+
+- GET/POST /api/fornecedores e /api/insumos; GET/PUT /{id}; PATCH /{id}/status.
+- GET/POST /api/fornecedores/{id}/produtos; GET/PUT /api/fornecedores/{id}/produtos/{produtoId}; PATCH /status da oferta.
+- GET/POST /api/fornecedor-produtos/{id}/precos; GET /api/fornecedor-produtos/{id}/preco-atual.
+
+Listas usam pagina, tamanhoPagina (1–100) e filtros busca/ativo nos cadastros. Enums JSON usam strings: MateriaPrima/Embalagem e ML/G/UN/L/KG. Insumos aceitam somente ML/G/UN como base. Densidade opcional em g/ml não provoca conversão implícita entre massa e volume.
+
+Oferta com histórico não muda insumo/apresentação; crie outra e desative a anterior. Documento CPF/CNPJ é opcional, normalizado e validado por formato de 11/14 dígitos; não verifica dígitos verificadores. Não existem endpoints de exclusão física.
+
+## Verificar
+
+Com API executando:
+
+```powershell
+./scripts/Verificar-Api.ps1
+# Somente banco de teste: cria registros e preserva-os.
+./scripts/Verificar-Integracao.ps1
+npm run build --prefix frontend
+```
+
+Vite usa carregamento nativo da configuração e preserveSymlinks para evitar o subprocesso de descoberta de unidades de rede do Windows no ambiente restrito.
+
+## Validação em 06/10/2026
+
+- API e projeto de verificações compilados sem erros ou avisos.
+- 20 verificações passaram: conversões, custo, precisão, documento, índices e delete restrito.
+- Migration Inicial, designer, snapshot e script SQL gerados.
+- Health e OpenAPI verificados por HTTP; cadastro inválido e enum inválido retornaram 400. Sem conexão, confirmado 503 com ProblemDetails.
+- Frontend instalado e build de produção concluído.
+
+O cliente .NET falhou ao acessar NuGet neste ambiente. Obtivemos os pacotes diretamente do NuGet por HTTPS com certificados validados, em feed temporário fora do repositório. A validação TLS não foi desabilitada.
+
+**Integração pendente:** o ambiente restrito não consegue iniciar/acessar a configuração do LocalDB no registro do Windows. database update falhou antes de conectar. Nenhum banco foi confirmado como criado. CRUD persistido, rollback e concorrência real ainda não foram verificados. O script de integração está pronto, mas não foi executado com sucesso. Inicie LocalDB no PowerShell do usuário e execute os comandos acima.
+
+Estoque, compras, fórmulas, produção, vendas, financeiro e autenticação seguem fora do escopo. A API não tem controle de acesso nesta fase; execute localmente até adicionar autenticação/autorização.

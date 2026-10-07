@@ -1,0 +1,22 @@
+{
+  "name": "perfumes-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --configLoader native",
+    "build": "vite build --configLoader native",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-router-dom": "7.18.4",
+    "axios": "1.20.0",
+    "bootstrap": "5.3.8"
+  },
+  "devDependencies": {
+    "vite": "8.3.3",
+    "@vitejs/plugin-react": "6.1.2"
+  }
+}
